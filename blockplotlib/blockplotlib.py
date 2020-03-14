@@ -1,16 +1,19 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from matplotlib.patches import Wedge, Circle, Rectangle, PathPatch, Patch, FancyArrowPatch
+from matplotlib.patches import (
+    Wedge, Circle, PathPatch, Patch, Polygon as PolygonPatch)
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 from matplotlib.path import Path
+from shapely.geometry import Polygon
+from shapely.ops import cascaded_union
 import numpy as np
 
 
 __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
            "RectangleBlock", "get_shift_to_align_b1_to_b2", "change_params",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
-           "Arrow", "Crossover"]
+           "Arrow", "Crossover", "CompoundPatch"]
 
 
 bpl_params = dict(
@@ -19,8 +22,8 @@ bpl_params = dict(
     rp_block_stroke_width=0.125,
     cp_block_radius=0.5,
     cp_block_stroke_width=0.125,
-    cop_block_radius=0.18,
-    ap_block_tip_angle=0.5,
+    cop_block_radius=0.16,
+    ap_block_tip_angle=0.4,
     ap_block_tip_length=0.45,
     ap_block_line_width=0.08,
     mpl_rpath_kws=dict(),
@@ -124,7 +127,7 @@ class PatchGroup:
 
         return mpl.transforms.Bbox([[x0, y0], [x1, y1]])
 
-    def place_text(self, text, loc="m", params=None):
+    def place_text(self, text, loc="m", pad_xy=(0, 0), params=None):
         if params is None:
             params = bpl_params
 
@@ -132,8 +135,8 @@ class PatchGroup:
             raise NotImplementedError
 
         text_path = TextPath((0, 0), text, **params["mpl_tpath_kws"])
-        shift = get_shift_to_align_b1_to_b2(text_path.get_extents(), loc,
-                                            self.get_geo_extents())
+        shift = get_shift_to_align_b1_to_b2(
+            text_path.get_extents(), loc, self.get_geo_extents(), pad_xy=pad_xy)
         text_path = text_path.transformed(Affine2D().translate(shift[0],
                                                                shift[1]))
         self.txt_patches.append(
@@ -207,7 +210,7 @@ class RoundCorner(CircleBlock):
 
 
 class Corner(RectangleBlock):
-    def __init__(self, pos, text=None, loc="m", alpha=None, params=None):
+    def __init__(self, pos, text=None, loc="m", alpha=0, params=None):
         if params is None:
             params = bpl_params
 
@@ -215,10 +218,9 @@ class Corner(RectangleBlock):
         params.update(rp_block_width=bpl_params["ap_block_line_width"])
         params.update(rp_block_height=bpl_params["ap_block_line_width"])
 
-        if alpha is not None:
-            mpl_rpatch_kws = bpl_params["mpl_rpatch_kws"].copy()
-            mpl_rpatch_kws.update(alpha=0)
-            params.update(mpl_rpatch_kws=mpl_rpatch_kws)
+        mpl_rpatch_kws = bpl_params["mpl_rpatch_kws"].copy()
+        mpl_rpatch_kws.update(alpha=alpha)
+        params.update(mpl_rpatch_kws=mpl_rpatch_kws)
 
         super().__init__(pos, text, loc, params)
 
@@ -278,22 +280,20 @@ class Line(PatchGroup):
             arrow_p111 = arrow_p11 + arrow_line
             arrow_p222 = arrow_p22 + arrow_line
 
-            verts = [a2, arrow_p1, arrow_p11, arrow_p111, arrow_p222, arrow_p22, arrow_p2, a2, a2]
-            codes = [Path.MOVETO] + [Path.LINETO] * 7 + [Path.CLOSEPOLY]
+            verts = [a2, arrow_p1, arrow_p11, arrow_p111, arrow_p222, arrow_p22,
+                     arrow_p2]
 
         elif type == "-":
             p1 = a1 + normal * arrow_lw / 2
             p2 = a2 + normal * arrow_lw / 2
             p3 = a2 - normal * arrow_lw / 2
             p4 = a1 - normal * arrow_lw / 2
-            verts = [p1, p2, p3, p4, p1, p1]
-            codes = [Path.MOVETO] + [Path.LINETO] * 4 + [Path.CLOSEPOLY]
+            verts = [p1, p2, p3, p4]
 
         else:
             raise NotImplementedError()
 
-        arrow_path = Path(verts, codes)
-        arrow_patch = PathPatch(arrow_path, **params["mpl_rpatch_kws"])
+        arrow_patch = PolygonPatch(verts, **params["mpl_rpatch_kws"])
 
         super().__init__((arrow_patch,))
 
@@ -303,6 +303,30 @@ class Arrow(Line):
         super().__init__(it1, it2, loc1, loc2, type, params)
 
 
+class CompoundPatch(PatchGroup):
+    def __init__(self, patches, params=None):
+        if params is None:
+            params = bpl_params
+
+        polygons = list()
+        for patch_group in patches:
+            for gp in patch_group.geo_patches:
+                polygons.append(Polygon(gp.get_path().vertices))
+
+        polygon = cascaded_union(polygons)
+        xy = [(x, y) for x, y in zip(polygon.exterior.coords.xy[0],
+                                        polygon.exterior.coords.xy[1])]
+        compound_patch = PolygonPatch(xy, **params["mpl_rpatch_kws"])
+
+        super().__init__([compound_patch])
+
+        txt_patches = list()
+        for patch_group in patches:
+            for tp in patch_group.txt_patches:
+                txt_patches.append(tp)
+
+        self.txt_patches = txt_patches
+
+
 if __name__ == "__main__":
-    from shapely.geometry import Polygon
-    from shapely.ops import cascaded_union
+    pass

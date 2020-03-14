@@ -1,6 +1,7 @@
+import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-import matplotlib.pyplot as plt
+
 from blockplotlib import *
 
 
@@ -29,14 +30,24 @@ so_cross = Crossover(grid["so_cross"])
 xk_corner = Corner(grid["xk_corner"])
 ks_corner = Corner(grid["ks_corner"])
 
-a_s_s = Arrow(setpoint, sum, "e")
-a_s_sy = Arrow(sum, system, "e")
-l_sy_c = Line(system, so_cross, "e", "m")
-a_c_o = Arrow(so_cross, output, "e")
-l_c_x = Line(so_cross, xk_corner, "m")
-a_x_g = Arrow(xk_corner, gain, "m", "e")
-l_g_k = Line(gain, ks_corner, "w", "m")
-a_k_s = Arrow(ks_corner, sum, "m", "s")
+a1 = Arrow(setpoint, sum, "e")
+a2 = Arrow(sum, system, "e")
+l1 = Line(system, so_cross, "e", "m")
+a3 = Arrow(so_cross, output, "m")
+a4 = CompoundPatch([
+    Line(so_cross, xk_corner, "m"),
+    xk_corner,
+    Arrow(xk_corner, gain, "m", "e")])
+a5 = Arrow(ks_corner, sum, "m", "s")
+a5.place_text(r"$-$", "e", pad_xy=(-0.3, a5.get_geo_extents().height / 2 - 0.2))
+a55 = CompoundPatch([
+    Line(gain, ks_corner, "w", "m"),
+    ks_corner,
+    a5])
+
+a1.place_text(r"$w$", "s", pad_xy=(0, .2))
+a2.place_text(r"$u$", "s", pad_xy=(0, .2))
+a3.place_text(r"$x$", "s", pad_xy=(0, .2))
 
 place_patches(workspace=locals())
 
