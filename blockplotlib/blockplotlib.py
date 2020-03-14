@@ -1,227 +1,308 @@
 import matplotlib.pyplot as plt
-import matplotlib
-from matplotlib.patches import Wedge, Circle, Rectangle, PathPatch
+import matplotlib as mpl
+from matplotlib.patches import Wedge, Circle, Rectangle, PathPatch, Patch, FancyArrowPatch
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 from matplotlib.path import Path
 import numpy as np
 
 
-usetex = True
-matplotlib.rcParams['text.usetex'] = usetex
-rp_width = 8
-rp_height = 2
-cp_radius = rp_height / 8
-block_strocke_width = cp_radius / 4
-cp_width = cp_radius / 2
-label_size = rp_height / 2
-arrow_length = 0.45
-arrow_lw = block_strocke_width / 2
-rect_path_kwargs = dict()
-rect_patch_kwargs = dict(facecolor="black", edgecolor=None, linewidth=None)
-text_path_kwargs = dict(usetex=usetex, size=label_size)
-text_patch_kwargs = dict(facecolor="black", edgecolor=None, linewidth=None)
-circle_patch_kwargs = dict(facecolor="black", edgecolor=None, linewidth=None)
+__all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
+           "RectangleBlock", "get_shift_to_align_b1_to_b2", "change_params",
+           "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
+           "Arrow", "Crossover"]
 
 
-def get_anchor(it, loc):
-    c = it.get_extents()
-    if loc == "w":
-        anchor = (c.x0, (c.y1 + c.y0) / 2)
-    elif loc == "e":
-        anchor = (c.x1, (c.y1 + c.y0) / 2)
-    elif loc == "n":
-        anchor = ((c.x1 + c.x0) / 2, c.y1)
-    elif loc == "s":
-        anchor = ((c.x1 + c.x0) / 2, c.y0)
-    elif loc == "m":
-        anchor = ((c.x1 + c.x0) / 2, (c.y1 + c.y0) / 2)
-    else:
-        raise ValueError()
-
-    return np.array(anchor)
-
-
+bpl_params = dict(
+    rp_block_width=8,
+    rp_block_height=2,
+    rp_block_stroke_width=0.125,
+    cp_block_radius=0.5,
+    cp_block_stroke_width=0.125,
+    cop_block_radius=0.18,
+    ap_block_tip_angle=0.5,
+    ap_block_tip_length=0.45,
+    ap_block_line_width=0.08,
+    mpl_rpath_kws=dict(),
+    mpl_rpatch_kws=dict(facecolor="black", edgecolor=None, linewidth=None),
+    mpl_cpatch_kws=dict(facecolor="black", edgecolor=None, linewidth=None),
+    mpl_tpath_kws=dict(usetex=mpl.rcParams['text.usetex'], size=1),
+    mpl_tpatch_kws=dict(facecolor="black", edgecolor=None, linewidth=None),
+)
 opposite_loc = {"w": "e", "e": "w", "n": "s", "s": "n", "m":"m"}
 
 
-def align_patch1_to_patch2(p1, loc1, p2, loc2=None, pad_xy=(0, 0), axis=None):
-    if axis is None: axis = plt.gca()
-    if loc2 is None: loc2 = opposite_loc[loc1]
+def change_params(**kwargs):
+    params = bpl_params.copy()
+    params.update(kwargs)
 
-    anchor1 = get_anchor(p1, loc1)
-    anchor2 = get_anchor(p2, loc2)
-    shift = anchor2 - anchor1 + np.array(pad_xy).flatten()
-    p1.set_transform(Affine2D().translate(shift[0], shift[1]) +
-                     axis.transData)
+    return params
 
 
-def get_arrow_patch(anchor1, anchor2, type, d_angle=0.3, length=arrow_length,
-                    width=arrow_lw):
-    vect = anchor1 - anchor2
-    angle = np.arctan2(vect[1], vect[0])
-    normal = np.array([-np.sin(angle), np.cos(angle)])
-    tang = np.array([np.cos(angle), np.sin(angle)])
-
-    if type == "->":
-        arrow_p1 = anchor2 + np.array([np.cos(angle + d_angle),
-                                       np.sin(angle + d_angle)]) * length
-        arrow_p2 = anchor2 + np.array([np.cos(angle - d_angle),
-                                       np.sin(angle - d_angle)]) * length
-        arrow_edge = normal * (2 * arrow_length * np.sin(d_angle) - arrow_lw) / 2
-        arrow_p11 = arrow_p1 - arrow_edge
-        arrow_p22 = arrow_p2 + arrow_edge
-        arrow_line = tang * (np.linalg.norm(vect) - arrow_length * np.cos(d_angle))
-        arrow_p111 = arrow_p11 + arrow_line
-        arrow_p222 = arrow_p22 + arrow_line
-
-        verts = [anchor2, arrow_p1, arrow_p11, arrow_p111, arrow_p222, arrow_p22, arrow_p2, anchor2, anchor2]
-        codes = [Path.MOVETO] + [Path.LINETO] * 7 + [Path.CLOSEPOLY]
-
-    elif type == "-":
-        p1 = anchor1 + normal * arrow_lw / 2
-        p2 = anchor2 + normal * arrow_lw / 2
-        p3 = anchor2 - normal * arrow_lw / 2
-        p4 = anchor1 - normal * arrow_lw / 2
-        verts = [p1, p2, p3, p4, p1, p1]
-        codes = [Path.MOVETO] + [Path.LINETO] * 4 + [Path.CLOSEPOLY]
-
-    else:
-        raise NotImplementedError()
-
-    arrow_path = Path(verts, codes)
-    arrow_patch = PathPatch(arrow_path, facecolor="black")
-
-    return arrow_patch
+def cp(**kwargs):
+    return change_params(**kwargs)
 
 
-def get_text(label, tp_kws=None, tpc_kws=None):
-    if tp_kws is None: tp_kws = text_path_kwargs
-    if tpc_kws is None: tpc_kws = text_patch_kwargs
-
-    text_path = TextPath((0, 0), label, **tp_kws)
-    text_patch = PathPatch(text_path, **tpc_kws)
-
-    return text_patch
-
-
-def get_rectangle(pos, label=None, width=rp_width, height=rp_height,
-                  stroke_width=block_strocke_width, rp_kws=None,
-                  rpc_kws=None, tp_kws=None, tpc_kws=None):
-    if rp_kws is None: rp_kws = rect_path_kwargs
-    if rpc_kws is None: rpc_kws = rect_patch_kwargs
-
-    pos = np.array(pos)
-    dx = np.array([width / 2, 0])
-    dxi = np.array([width / 2 - stroke_width, 0])
-    dy = np.array([0, height / 2])
-    dyi = np.array([0, height / 2 - stroke_width])
-    verts = [
-        pos - dx - dy, pos - dx + dy, pos + dx + dy, pos + dx - dy,
-        pos - dx - dy, pos - dxi - dyi, pos + dxi - dyi, pos + dxi + dyi,
-        pos - dxi + dyi, pos - dxi - dyi, pos - dx - dy, pos - dx - dy]
-    codes = ([Path.MOVETO] + [Path.LINETO] * 4 + [Path.MOVETO] +
-             [Path.LINETO] * 4 + [Path.MOVETO] + [Path.CLOSEPOLY])
-    rect_path = Path(verts, codes, **rp_kws)
-    rect_patch = PathPatch(rect_path, **rpc_kws)
-
-    if not label:
-        return rect_patch
-
-    text_patch = get_text(label, tp_kws, tpc_kws)
-    align_patch1_to_patch2(text_patch, "m", rect_patch)
-
-    return rect_patch, text_patch
-
-
-def get_circle(pos, label=None, radius=cp_radius, width=cp_width, cp_kws=None,
-               tp_kws=None, tpc_kws=None):
-    if cp_kws is None: cp_kws = circle_patch_kwargs
-    if width is None: width = radius
-
-    if radius == 0:
-        circle_patch = Circle(pos, radius, **cp_kws)
-    else:
-        circle_patch = Wedge(pos, radius, 0, 360, width, **cp_kws)
-
-    if not label:
-        return circle_patch,
-
-    text_patch = get_text(label, tp_kws, tpc_kws)
-    align_patch1_to_patch2(text_patch, "m", circle_patch)
-
-    return circle_patch, text_patch
-
-
-def get_arrow(it1, loc1, it2, loc2, type="->"):
-    a1 = get_anchor(it1[0], loc1)
-    a2 = get_anchor(it2[0], loc2)
-
-    return get_arrow_patch(a1, a2, type)
-
-
-def place_patches(axis=None, patches=None):
+def place_patches(patches=None, workspace=None, axis=None):
     if axis is None:
         axis = plt.gca()
 
+    if not (workspace or patches):
+        raise ValueError
+
     def add_patch(patch):
         if patch not in axis.patches:
-            axis.add_patch(patch)
+            if isinstance(patch, PatchGroup):
+                for p in patch.get_patches():
+                    axis.add_patch(p)
+            else:
+                axis.add_patch(patch)
 
-    allowed_patches = (Rectangle, PathPatch, Circle, Wedge)
+    allowed_patches = (Patch, PatchGroup)
 
     if patches is None:
-        for v in globals().values():
+        for v in workspace.values():
             if isinstance(v, allowed_patches):
                 add_patch(v)
-            elif isinstance(v, tuple):
-                for vv in v:
-                    if not isinstance(vv, allowed_patches):
-                        break
-                else:
-                    for p in v:
-                        add_patch(p)
 
     else:
         for patch in patches:
             add_patch(patch)
 
 
+def get_anchor(bbox, loc):
+    if loc == "w":
+        anchor = (bbox.x0, (bbox.y1 + bbox.y0) / 2)
+    elif loc == "e":
+        anchor = (bbox.x1, (bbox.y1 + bbox.y0) / 2)
+    elif loc == "n":
+        anchor = ((bbox.x1 + bbox.x0) / 2, bbox.y1)
+    elif loc == "s":
+        anchor = ((bbox.x1 + bbox.x0) / 2, bbox.y0)
+    elif loc == "m":
+        anchor = ((bbox.x1 + bbox.x0) / 2, (bbox.y1 + bbox.y0) / 2)
+    else:
+        raise ValueError()
+
+    return np.array(anchor)
+
+
+def get_shift_to_align_b1_to_b2(b1, loc1, b2, loc2=None, pad_xy=(0, 0)):
+    if loc2 is None:
+        loc2 = opposite_loc[loc1]
+
+    anchor1 = get_anchor(b1, loc1)
+    anchor2 = get_anchor(b2, loc2)
+
+    return anchor2 - anchor1 + np.array(pad_xy).flatten()
+
+
+class PatchGroup:
+    def __init__(self, geo_patches, text=None, loc="m"):
+        self.geo_patches = [p for p in geo_patches]
+        self.txt_patches = list()
+
+        if text is not None:
+            self.place_text(text, loc)
+
+    def get_patches(self):
+        return self.geo_patches + self.txt_patches
+
+    def get_geo_extents(self):
+        return PatchGroup.get_extents(self.geo_patches)
+
+    def get_txt_extents(self):
+        return PatchGroup.get_extents(self.txt_patches)
+
+    @staticmethod
+    def get_extents(patches):
+        extents = [p.get_extents() for p in patches]
+        x0 = min([e.x0 for e in extents])
+        x1 = max([e.x1 for e in extents])
+        y0 = min([e.y0 for e in extents])
+        y1 = max([e.y1 for e in extents])
+
+        return mpl.transforms.Bbox([[x0, y0], [x1, y1]])
+
+    def place_text(self, text, loc="m", params=None):
+        if params is None:
+            params = bpl_params
+
+        if len(self.geo_patches) == 0:
+            raise NotImplementedError
+
+        text_path = TextPath((0, 0), text, **params["mpl_tpath_kws"])
+        shift = get_shift_to_align_b1_to_b2(text_path.get_extents(), loc,
+                                            self.get_geo_extents())
+        text_path = text_path.transformed(Affine2D().translate(shift[0],
+                                                               shift[1]))
+        self.txt_patches.append(
+            PathPatch(text_path, **params["mpl_tpatch_kws"]))
+
+    def get_geo_anchor(self, loc="m"):
+        bbox = self.get_geo_extents()
+
+        return get_anchor(bbox, loc)
+
+
+class RectangleBlock(PatchGroup):
+    def __init__(self, pos, text=None, loc="m", params=None):
+        if params is None:
+            params = bpl_params
+
+        width = params["rp_block_width"]
+        height = params["rp_block_height"]
+        stroke_width = params["rp_block_stroke_width"]
+
+        pos = np.array(pos)
+        dx = np.array([width / 2, 0])
+        dxi = np.array([width / 2 - stroke_width, 0])
+        dy = np.array([0, height / 2])
+        dyi = np.array([0, height / 2 - stroke_width])
+        if width <= 2 * stroke_width or height <= 2 * stroke_width:
+            verts = [
+                pos - dx - dy, pos - dx + dy, pos + dx + dy, pos + dx - dy,
+                pos - dx - dy, pos - dx - dy]
+            codes = ([Path.MOVETO] + [Path.LINETO] * 4 + [Path.CLOSEPOLY])
+
+        else:
+            verts = [
+                pos - dx - dy, pos - dx + dy, pos + dx + dy, pos + dx - dy,
+                pos - dx - dy, pos - dxi - dyi, pos + dxi - dyi, pos + dxi + dyi,
+                pos - dxi + dyi, pos - dxi - dyi, pos - dx - dy, pos - dx - dy]
+            codes = ([Path.MOVETO] + [Path.LINETO] * 4 + [Path.MOVETO] +
+                     [Path.LINETO] * 4 + [Path.MOVETO] + [Path.CLOSEPOLY])
+
+        rect_path = Path(verts, codes, **params["mpl_rpath_kws"])
+        self.rect_patch = PathPatch(rect_path, **params["mpl_rpatch_kws"])
+
+        super().__init__((self.rect_patch,), text, loc)
+
+
+class CircleBlock(PatchGroup):
+    def __init__(self, pos, text=None, loc="m", params=None):
+        if params is None:
+            params = bpl_params
+
+        radius = params["cp_block_radius"]
+        width = params["cp_block_stroke_width"]
+        if radius <= width:
+            self.circle_patch = Circle(pos, radius, **params["mpl_cpatch_kws"])
+        else:
+            self.circle_patch = Wedge(
+                pos, radius, 0, 360, width, **params["mpl_cpatch_kws"])
+
+        super().__init__((self.circle_patch,), text, loc)
+
+
+class RoundCorner(CircleBlock):
+    def __init__(self, pos, text=None, loc="m", params=None):
+        if params is None:
+            params = bpl_params
+
+        params.update(cp_block_radius=bpl_params["ap_block_line_width"] / 2)
+        params.update(cp_block_stroke_width=bpl_params["ap_block_line_width"])
+
+        super().__init__(pos, text, loc, params)
+
+
+class Corner(RectangleBlock):
+    def __init__(self, pos, text=None, loc="m", alpha=None, params=None):
+        if params is None:
+            params = bpl_params
+
+        params = params.copy()
+        params.update(rp_block_width=bpl_params["ap_block_line_width"])
+        params.update(rp_block_height=bpl_params["ap_block_line_width"])
+
+        if alpha is not None:
+            mpl_rpatch_kws = bpl_params["mpl_rpatch_kws"].copy()
+            mpl_rpatch_kws.update(alpha=0)
+            params.update(mpl_rpatch_kws=mpl_rpatch_kws)
+
+        super().__init__(pos, text, loc, params)
+
+
+class Crossover(CircleBlock):
+    def __init__(self, pos, text=None, loc="m", params=None):
+        if params is None:
+            params = bpl_params
+
+        params = params.copy()
+        params.update(cp_block_radius=bpl_params["cop_block_radius"])
+        params.update(cp_block_stroke_width=bpl_params["cop_block_radius"])
+
+        super().__init__(pos, text, loc, params)
+
+
+class Node(CircleBlock):
+    def __init__(self, pos, text=None, loc="m", params=None):
+        if params is None:
+            params = bpl_params
+
+        params = params.copy()
+        params.update(cp_block_radius=0)
+
+        super().__init__(pos, text, loc, params)
+
+
+class Line(PatchGroup):
+    def __init__(self, it1, it2, loc1, loc2=None, type="-", params=None):
+        if params is None:
+            params = bpl_params
+
+        if loc2 is None:
+            loc2 = opposite_loc[loc1]
+
+        t_angle = params["ap_block_tip_angle"]
+        t_length = params["ap_block_tip_length"]
+        arrow_lw = params["ap_block_line_width"]
+
+        a1 = it1.get_geo_anchor(loc1)
+        a2 = it2.get_geo_anchor(loc2)
+
+        vect = a1 - a2
+        angle = np.arctan2(vect[1], vect[0])
+        normal = np.array([-np.sin(angle), np.cos(angle)])
+        tang = np.array([np.cos(angle), np.sin(angle)])
+
+        if type == "->":
+            arrow_p1 = a2 + np.array([np.cos(angle + t_angle),
+                                           np.sin(angle + t_angle)]) * t_length
+            arrow_p2 = a2 + np.array([np.cos(angle - t_angle),
+                                           np.sin(angle - t_angle)]) * t_length
+            arrow_edge = normal * (2 * t_length * np.sin(t_angle) - arrow_lw) / 2
+            arrow_p11 = arrow_p1 - arrow_edge
+            arrow_p22 = arrow_p2 + arrow_edge
+            arrow_line = tang * (np.linalg.norm(vect) - t_length * np.cos(t_angle))
+            arrow_p111 = arrow_p11 + arrow_line
+            arrow_p222 = arrow_p22 + arrow_line
+
+            verts = [a2, arrow_p1, arrow_p11, arrow_p111, arrow_p222, arrow_p22, arrow_p2, a2, a2]
+            codes = [Path.MOVETO] + [Path.LINETO] * 7 + [Path.CLOSEPOLY]
+
+        elif type == "-":
+            p1 = a1 + normal * arrow_lw / 2
+            p2 = a2 + normal * arrow_lw / 2
+            p3 = a2 - normal * arrow_lw / 2
+            p4 = a1 - normal * arrow_lw / 2
+            verts = [p1, p2, p3, p4, p1, p1]
+            codes = [Path.MOVETO] + [Path.LINETO] * 4 + [Path.CLOSEPOLY]
+
+        else:
+            raise NotImplementedError()
+
+        arrow_path = Path(verts, codes)
+        arrow_patch = PathPatch(arrow_path, **params["mpl_rpatch_kws"])
+
+        super().__init__((arrow_patch,))
+
+
+class Arrow(Line):
+    def __init__(self, it1, it2, loc1, loc2=None, type="->", params=None):
+        super().__init__(it1, it2, loc1, loc2, type, params)
+
 
 if __name__ == "__main__":
-
-    plt.figure(figsize=(5,5), facecolor="white")
-    plt.axis("off")
-
-    b1 = get_rectangle((0, 0), r"\bf{hello axis} $a\mapsto b$")
-    b2 = get_rectangle((0, 4), r"\bf{hello axis} $a - b$")
-    b3 = get_rectangle((0, -4), r"\bf{hello axis} $a\rightarrow b$")
-    c1 = get_arrow(b1, "n", b2, "s")
-    c2 = get_arrow(b3, "n", b1, "s")
-
-    b4 = get_rectangle((12, 0), r"\bf{hello gaxis} $a\mapsto b$")
-    b5 = get_rectangle((12, 4), r"\begin{center}\bf{hello axis} \\ $a - b$\end{center}", height=rp_height*1.5)
-    b6 = get_rectangle((12, -4), r"\bf{hello axis} $a\rightarrow b$")
-    c3 = get_arrow(b1, "e", b4, "w")
-    c4 = get_arrow(b1, "e", b5, "w")
-    c5 = get_arrow(b1, "e", b5, "s")
-    c6 = get_arrow(b1, "e", b6, "w")
-    c7 = get_arrow(b1, "e", b6, "n")
-    c8 = get_arrow(b2, "e", b5, "w")
-
-    u1 = get_circle((24, 0), width=None)
-    u2 = get_circle((24, -4), r"$\Phi(t)=e^{A t}$", radius=rp_height * 1.3)
-    u3 = get_circle((28, 0), radius=0)
-    u4 = get_circle((24, 4), radius=0)
-    c9 = get_arrow(b4, "e", u1, "w", type="-")
-    c10 = get_arrow(u1, "e", u3, "w")
-    c11 = get_arrow(u1, "s", u2, "n")
-    c12 = get_arrow(b5, "e", u4, "w", type="-")
-    c13 = get_arrow(u4, "s", u1, "n", type="-")
-
-    t1 = get_text(r"$y(t)$")
-    align_patch1_to_patch2(t1, "s", c9)
-    place_patches()
-
-    plt.axis("equal")
-    plt.show()
+    from shapely.geometry import Polygon
+    from shapely.ops import cascaded_union
