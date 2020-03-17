@@ -3,3 +3,11 @@ __pycache__
 *.egg-info
 *.ipynb_checkpoints
 .idea
+
+*.aux
+*.bpl_tex
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.synctex.gz

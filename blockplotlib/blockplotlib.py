@@ -1,3 +1,6 @@
+import sys
+import pathlib
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import (
@@ -7,15 +10,22 @@ from matplotlib.transforms import Affine2D
 from matplotlib.path import Path
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
-import numpy as np
 
 
 __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
            "RectangleBlock", "get_shift_to_align_b1_to_b2", "change_params",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
-           "Arrow", "Crossover", "CompoundPatch"]
+           "Arrow", "Crossover", "CompoundPatch", "save_figure",
+           "write_bpl_tex_file"]
 
 
+patch_kws = dict(
+    facecolor="black",
+    edgecolor="black",
+    linewidth=0,
+    snap=False,
+    aa=True)
+text_path_kws = dict(usetex=mpl.rcParams['text.usetex'], size=1)
 bpl_params = dict(
     rp_block_width=8,
     rp_block_height=2,
@@ -27,10 +37,10 @@ bpl_params = dict(
     ap_block_tip_length=0.45,
     ap_block_line_width=0.08,
     mpl_rpath_kws=dict(),
-    mpl_rpatch_kws=dict(facecolor="black", edgecolor=None, linewidth=None),
-    mpl_cpatch_kws=dict(facecolor="black", edgecolor=None, linewidth=None),
-    mpl_tpath_kws=dict(usetex=mpl.rcParams['text.usetex'], size=1),
-    mpl_tpatch_kws=dict(facecolor="black", edgecolor=None, linewidth=None),
+    mpl_rpatch_kws=patch_kws.copy(),
+    mpl_cpatch_kws=patch_kws.copy(),
+    mpl_tpatch_kws=patch_kws.copy(),
+    mpl_tpath_kws=text_path_kws.copy(),
 )
 opposite_loc = {"w": "e", "e": "w", "n": "s", "s": "n", "m":"m"}
 
@@ -98,6 +108,58 @@ def get_shift_to_align_b1_to_b2(b1, loc1, b2, loc2=None, pad_xy=(0, 0)):
     anchor2 = get_anchor(b2, loc2)
 
     return anchor2 - anchor1 + np.array(pad_xy).flatten()
+
+
+def get_name_from_sys_argv(sys_argv=None):
+    if sys_argv is None:
+        sys_argv = sys.argv
+
+    path = pathlib.Path(sys_argv[0])
+
+    return str(path.parent) + pathlib.os.sep + path.stem
+
+
+def save_figure(name=None, fig=None):
+    if name is None:
+        name = get_name_from_sys_argv()
+
+    if "." not in name:
+        name = name + ".pdf"
+
+    if fig is None:
+        fig = plt.gcf()
+
+    ax = fig.axes[0]
+    ax.set_aspect("equal")
+    ax.margins(0)
+    ax.tick_params(which='both', direction='in')
+    fig.canvas.draw()
+    ax.axis("off")
+
+    plt.savefig(name, bbox_inches=ax.get_window_extent().transformed(
+        fig.dpi_scale_trans.inverted()))
+
+
+def write_bpl_tex_file(name=None, pic_name=None, fig=None):
+    if name is None:
+        name = get_name_from_sys_argv() + ".bpl_tex"
+
+    if pic_name is None:
+        pic_name = get_name_from_sys_argv()
+
+    if "." not in name:
+        name = name + ".pdf"
+
+    if fig is None:
+        fig = plt.gcf()
+
+    ax = fig.axes[0]
+    font_height = TextPath((0, 0), "a", **text_path_kws).get_extents().height
+    pic_height = ax.viewLim.y1 - ax.viewLim.y0
+
+    with open(name, "w") as file:
+        file.write("\includegraphics[height={}\BplLengthUnit]{{{}}}".format(
+            pic_height / font_height, pic_name))
 
 
 class PatchGroup:

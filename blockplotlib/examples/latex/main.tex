@@ -1,0 +1,52 @@
+%! Author = Marcus Riesmeier
+%! Date = 17.03.20
+
+% Height of a lowercase 'a'
+\newlength{\BplLengthUnit}
+\AtBeginDocument{\settoheight{\BplLengthUnit}{a}}
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{pgf}
+
+% Graphicspaths
+\graphicspath{{pics/}}
+
+% Document
+\begin{document}
+
+    Some text as regular latex paragraph.
+
+    \textbf{Picture 1:}
+
+        \input{pics/picture1.bpl_tex}
+    \vfill
+
+    A example for a inline formula: $f(x) = x^2$
+
+    \textbf{Picture 2:}
+
+        \input{pics/picture2.bpl_tex}
+    \vfill
+
+    A formula in displaystyle:
+    \begin{align*}
+        f(x) = x^2
+    \end{align*}
+
+    \textbf{Picture 3:}
+
+        \input{pics/picture3.bpl_tex}
+    \vfill
+
+    A block diagram which contain for example the formula $\dot x = \dots$.
+
+    \textbf{Picture 4:}
+
+        \input{pics/picture4.bpl_tex}
+
+\end{document}
