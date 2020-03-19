@@ -1,0 +1,10 @@
+\newlength{\BplLengthUnit}
+\makeatletter
+\newcommand*\bplSettototalheight[2]{%
+  \settoheight{#1}{#2}%
+  \settodepth{\@tempdima}{#2}%
+  \addtolength{#1}{\@tempdima}%
+}
+\makeatother
+\AtBeginDocument{\bplSettototalheight\BplLengthUnit{A}}
+

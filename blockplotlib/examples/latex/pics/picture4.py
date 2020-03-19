@@ -1,11 +1,9 @@
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['text.usetex'] = True
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['font.family'] = "serif"
+mpl.rcParams['font.serif'] = ["Computer Modern"]
 
 from blockplotlib import *
-
-
-fig = plt.figure()
 
 dx, dy = 4, 4
 x1, x2, x3, x4, x5 = 0, dx, 3 * dx, 4.5 * dx, 5.3 * dx
@@ -53,6 +51,5 @@ place_patches(workspace=locals())
 
 save_figure()
 write_bpl_tex_file()
-
-plt.show()
+show()
 

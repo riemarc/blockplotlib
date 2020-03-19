@@ -1,13 +1,12 @@
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['font.family'] = "serif"
+mpl.rcParams['font.serif'] = ["Computer Modern"]
+
 from matplotlib.patches import PathPatch
 from matplotlib.text import TextPath
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.rcParams['text.usetex'] = True
-
 from blockplotlib import *
 
-
-fig = plt.figure()
 
 text = TextPath((0,0), r"A formula in displaystyle as pdf picture: \\"
                        r"\begin{equation}"
@@ -20,6 +19,5 @@ place_patches(workspace=locals())
 
 save_figure()
 write_bpl_tex_file()
-
-plt.show()
+show()
 

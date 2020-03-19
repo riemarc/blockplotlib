@@ -1,23 +1,24 @@
 %! Author = Marcus Riesmeier
 %! Date = 17.03.20
 
-% Height of a lowercase 'a'
-\newlength{\BplLengthUnit}
-\AtBeginDocument{\settoheight{\BplLengthUnit}{a}}
-
 % Preamble
 \documentclass[11pt]{article}
 
 % Packages
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage{pgf}
 
 % Graphicspaths
 \graphicspath{{pics/}}
 
+% Provied measure \BplLengthUnit
+\input{bpl_preamble}
+
 % Document
 \begin{document}
+    Height of 'A': \the\BplLengthUnit
+
+    \vfill
 
     Some text as regular latex paragraph.
 

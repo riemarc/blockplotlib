@@ -5,20 +5,18 @@ matplotlib.rcParams['text.usetex'] = True
 from blockplotlib import *
 
 
-plt.figure(figsize=(5, 5), facecolor="white")
-plt.axis("off")
-
-dx = 4
-dy = 4
+dx, dy = 4, 4
+x1, x2, x3, x4, x5 = 0, dx, 3 * dx, 4.5 * dx, 5.3 * dx
+y1, y2 = 0, -dy
 grid = dict(
-    setpoint=(0, 0),
-    sum=(dx, 0),
-    system=(dx * 3, 0),
-    output=(dx * 5.7, 0),
-    so_cross=(dx * 4.9, 0),
-    xk_corner=(dx * 4.9, -dy),
-    gain=(dx * 3, -dy),
-    ks_corner=(dx, -dy)
+    setpoint=(x1, y1),
+    sum=(x2, y1),
+    system=(x3, y1),
+    so_cross=(x4, y1),
+    output=(x5, y1),
+    xk_corner=(x4, y2),
+    gain=(x3, y2),
+    ks_corner=(dx, y2)
 )
 
 system = RectangleBlock(grid[r"system"], r"$\dot x = A x + B u$")
@@ -50,6 +48,6 @@ a2.place_text(r"$u$", "s", pad_xy=(0, .2))
 a3.place_text(r"$x$", "s", pad_xy=(0, .2))
 
 place_patches(workspace=locals())
-
+plt.axis("off")
 plt.axis("equal")
 plt.show()

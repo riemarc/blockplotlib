@@ -16,7 +16,7 @@ __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
            "RectangleBlock", "get_shift_to_align_b1_to_b2", "change_params",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
            "Arrow", "Crossover", "CompoundPatch", "save_figure",
-           "write_bpl_tex_file"]
+           "write_bpl_tex_file", "show"]
 
 
 patch_kws = dict(
@@ -54,6 +54,11 @@ def change_params(**kwargs):
 
 def cp(**kwargs):
     return change_params(**kwargs)
+
+
+def show(*args, **kwargs):
+    if "latexmk" not in sys.argv:
+        plt.show(*args, **kwargs)
 
 
 def place_patches(patches=None, workspace=None, axis=None):
@@ -154,7 +159,7 @@ def write_bpl_tex_file(name=None, pic_name=None, fig=None):
         fig = plt.gcf()
 
     ax = fig.axes[0]
-    font_height = TextPath((0, 0), "a", **text_path_kws).get_extents().height
+    font_height = TextPath((0, 0), "A", **text_path_kws).get_extents().height
     pic_height = ax.viewLim.y1 - ax.viewLim.y0
 
     with open(name, "w") as file:
@@ -203,6 +208,8 @@ class PatchGroup:
                                                                shift[1]))
         self.txt_patches.append(
             PathPatch(text_path, **params["mpl_tpatch_kws"]))
+
+        return self
 
     def get_geo_anchor(self, loc="m"):
         bbox = self.get_geo_extents()

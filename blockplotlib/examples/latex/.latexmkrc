@@ -5,7 +5,7 @@ $pdflatex = 'pdflatex --shell-escape -interaction nonstopmode -synctex=1 %O %S';
 
 add_cus_dep('py', 'bpl_tex', 0, 'py2bpl_tex');
 sub py2bpl_tex {
-   return system("python \"$_[0].py\"");
+   return system("python \"$_[0].py\" \"latexmk\"");
 }
 
 show_cus_dep();
