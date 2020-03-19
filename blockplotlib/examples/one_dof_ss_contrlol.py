@@ -1,15 +1,16 @@
 import matplotlib.pyplot as plt
 import matplotlib
+
 matplotlib.rcParams['text.usetex'] = True
 
 from blockplotlib import *
 
-
 dx, dy = 4, 4
-x1, x2, x3, x4, x5 = 0, dx, 3 * dx, 4.5 * dx, 5.3 * dx
-y1, y2 = 0, -dy
+x0, x1, x2, x3, x4, x5 = -dx, 0, dx, 2.9 * dx, 4.5 * dx, 5.3 * dx
+y0, y1, y2 = 0, 0, -dy
 grid = dict(
-    setpoint=(x1, y1),
+    setpoint=(x0, y0),
+    filter=(x1, y1),
     sum=(x2, y1),
     system=(x3, y1),
     so_cross=(x4, y1),
@@ -19,6 +20,7 @@ grid = dict(
     ks_corner=(dx, y2)
 )
 
+filter = RectangleBlock(grid[r"filter"], r"$V$", params=cp(rp_block_width=3))
 system = RectangleBlock(grid[r"system"], r"$\dot x = A x + B u$")
 gain = RectangleBlock(grid[r"gain"], r"$K$", params=cp(rp_block_width=3))
 sum = CircleBlock(grid["sum"])
@@ -28,7 +30,8 @@ so_cross = Crossover(grid["so_cross"])
 xk_corner = Corner(grid["xk_corner"])
 ks_corner = Corner(grid["ks_corner"])
 
-a1 = Arrow(setpoint, sum, "e")
+a0 = Arrow(setpoint, filter, "e")
+a1 = Arrow(filter, sum, "e")
 a2 = Arrow(sum, system, "e")
 l1 = Line(system, so_cross, "e", "m")
 a3 = Arrow(so_cross, output, "m")
@@ -43,7 +46,7 @@ a55 = CompoundPatch([
     ks_corner,
     a5])
 
-a1.place_text(r"$w$", "s", pad_xy=(0, .2))
+a0.place_text(r"$w$", "s", pad_xy=(0, .2))
 a2.place_text(r"$u$", "s", pad_xy=(0, .2))
 a3.place_text(r"$x$", "s", pad_xy=(0, .2))
 
