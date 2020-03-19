@@ -16,7 +16,8 @@ __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
            "RectangleBlock", "get_shift_to_align_b1_to_b2", "change_params",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
            "Arrow", "Crossover", "CompoundPatch", "save_figure",
-           "write_bpl_tex_file", "show"]
+           "write_bpl_tex_file", "show", "update_bpl_params", "set_alpha",
+           "set_color"]
 
 
 patch_kws = dict(
@@ -42,7 +43,16 @@ bpl_params = dict(
     mpl_tpatch_kws=patch_kws.copy(),
     mpl_tpath_kws=text_path_kws.copy(),
 )
-opposite_loc = {"w": "e", "e": "w", "n": "s", "s": "n", "m":"m"}
+_bpl_params = bpl_params.copy()
+opposite_loc = {"w": "e", "e": "w", "n": "s", "s": "n", "m": "m"}
+
+
+def reset_bpl_params():
+    bpl_params.update(_bpl_params.copy())
+
+
+def update_bpl_params(**kwargs):
+    bpl_params.update(kwargs)
 
 
 def change_params(**kwargs):
@@ -61,31 +71,50 @@ def show(*args, **kwargs):
         plt.show(*args, **kwargs)
 
 
+def get_patches(workspace):
+    patches = list()
+
+    for v in workspace.values():
+        if isinstance(v, allowed_patches):
+            patches.append(v)
+
+    return patches
+
+
+def get_mpl_patches(patches=None, workspace=None):
+    if patches is None:
+        if workspace is None:
+            raise ValueError
+        else:
+            patches = get_patches(workspace)
+
+    pts = list()
+    for pt in patches:
+        if isinstance(pt, PatchGroup):
+            pts += pt.get_patches()
+        else:
+            pts.append(pt)
+
+    return pts
+
+
+def set_alpha(patches, alpha):
+    for pt in get_mpl_patches(patches):
+        pt.set_alpha(alpha)
+
+
+def set_color(patches, color):
+    for pt in get_mpl_patches(patches):
+        pt.set_color(color)
+
+
 def place_patches(patches=None, workspace=None, axis=None):
     if axis is None:
         axis = plt.gca()
 
-    if not (workspace or patches):
-        raise ValueError
-
-    def add_patch(patch):
-        if patch not in axis.patches:
-            if isinstance(patch, PatchGroup):
-                for p in patch.get_patches():
-                    axis.add_patch(p)
-            else:
-                axis.add_patch(patch)
-
-    allowed_patches = (Patch, PatchGroup)
-
-    if patches is None:
-        for v in workspace.values():
-            if isinstance(v, allowed_patches):
-                add_patch(v)
-
-    else:
-        for patch in patches:
-            add_patch(patch)
+    for pt in get_mpl_patches(patches, workspace):
+        if pt not in axis.patches:
+            axis.add_patch(pt)
 
 
 def get_anchor(bbox, loc):
@@ -203,7 +232,10 @@ class PatchGroup:
 
         text_path = TextPath((0, 0), text, **params["mpl_tpath_kws"])
         shift = get_shift_to_align_b1_to_b2(
-            text_path.get_extents(), loc, self.get_geo_extents(), pad_xy=pad_xy)
+            text_path.get_extents(),
+            opposite_loc[loc],
+            self.get_geo_extents(),
+            pad_xy=pad_xy)
         text_path = text_path.transformed(Affine2D().translate(shift[0],
                                                                shift[1]))
         self.txt_patches.append(
@@ -300,8 +332,8 @@ class Crossover(CircleBlock):
             params = bpl_params
 
         params = params.copy()
-        params.update(cp_block_radius=bpl_params["cop_block_radius"])
-        params.update(cp_block_stroke_width=bpl_params["cop_block_radius"])
+        params.update(cp_block_radius=params["cop_block_radius"])
+        params.update(cp_block_stroke_width=params["cop_block_radius"])
 
         super().__init__(pos, text, loc, params)
 
@@ -396,6 +428,8 @@ class CompoundPatch(PatchGroup):
 
         self.txt_patches = txt_patches
 
+
+allowed_patches = (Patch, PatchGroup)
 
 if __name__ == "__main__":
     pass

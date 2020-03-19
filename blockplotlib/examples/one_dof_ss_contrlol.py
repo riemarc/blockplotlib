@@ -20,9 +20,9 @@ grid = dict(
     ks_corner=(dx, y2)
 )
 
-filter = RectangleBlock(grid[r"filter"], r"$V$", params=cp(rp_block_width=3))
-system = RectangleBlock(grid[r"system"], r"$\dot x = A x + B u$")
-gain = RectangleBlock(grid[r"gain"], r"$K$", params=cp(rp_block_width=3))
+filter = RectangleBlock(grid["filter"], r"$V$", params=cp(rp_block_width=3))
+system = RectangleBlock(grid["system"], r"$\dot x = A x + B u$")
+gain = RectangleBlock(grid["gain"], r"$K$", params=cp(rp_block_width=3))
 sum = CircleBlock(grid["sum"])
 setpoint = Node(grid["setpoint"])
 output = Node(grid["output"])
@@ -40,15 +40,15 @@ a4 = CompoundPatch([
     xk_corner,
     Arrow(xk_corner, gain, "m", "e")])
 a5 = Arrow(ks_corner, sum, "m", "s")
-a5.place_text(r"$-$", "e", pad_xy=(-0.3, a5.get_geo_extents().height / 2 - 0.2))
+a5.place_text(r"$-$", "w", pad_xy=(-0.3, a5.get_geo_extents().height / 2 - 0.2))
 a55 = CompoundPatch([
     Line(gain, ks_corner, "w", "m"),
     ks_corner,
     a5])
 
-a0.place_text(r"$w$", "s", pad_xy=(0, .2))
-a2.place_text(r"$u$", "s", pad_xy=(0, .2))
-a3.place_text(r"$x$", "s", pad_xy=(0, .2))
+a0.place_text(r"$w$", "n", pad_xy=(0, .2))
+a2.place_text(r"$u$", "n", pad_xy=(0, .2))
+a3.place_text(r"$x$", "n", pad_xy=(0, .2))
 
 place_patches(workspace=locals())
 plt.axis("off")
