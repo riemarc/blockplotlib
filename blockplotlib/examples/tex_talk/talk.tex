@@ -2,14 +2,19 @@
 %! Date = 19.03.20
 
 % Preamble
-\documentclass[11pt]{article}
+\documentclass[11pt]{beamer}
+\usepackage{graphicx}
 
-% Packages
-\usepackage{amsmath}
+% Graphicspaths
+\graphicspath{{pics/}}
 
 % Document
 \begin{document}
 
-
+    \begin{frame}[t]
+        \includegraphics<1>[width=\textwidth]{pics/picture.pdf}
+        \includegraphics<2>[width=\textwidth]{pics/picture2}
+        \includegraphics<3>[width=\textwidth]{pics/picture1}
+    \end{frame}
 
 \end{document}

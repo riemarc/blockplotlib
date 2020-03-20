@@ -17,7 +17,7 @@ __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
            "Arrow", "Crossover", "CompoundPatch", "save_figure",
            "write_bpl_tex_file", "show", "update_bpl_params", "set_alpha",
-           "set_color"]
+           "set_color", "get_patches", "get_mpl_patches", "hide_patches"]
 
 
 patch_kws = dict(
@@ -98,6 +98,11 @@ def get_mpl_patches(patches=None, workspace=None):
     return pts
 
 
+def hide_patches(patches, b=True):
+    for patch in get_mpl_patches(patches):
+        patch.set_visible(not b)
+
+
 def set_alpha(patches, alpha):
     for pt in get_mpl_patches(patches):
         pt.set_alpha(alpha)
@@ -112,9 +117,18 @@ def place_patches(patches=None, workspace=None, axis=None):
     if axis is None:
         axis = plt.gca()
 
-    for pt in get_mpl_patches(patches, workspace):
-        if pt not in axis.patches:
-            axis.add_patch(pt)
+    for patch in get_mpl_patches(patches, workspace):
+        if patch not in axis.patches:
+            axis.add_patch(patch)
+
+
+def remove_patches(patches, axis=None):
+    if axis is None:
+        axis = plt.gca()
+
+    for patch in patches:
+        if patch in axis.patches:
+            axis.add
 
 
 def get_anchor(bbox, loc):
@@ -144,18 +158,21 @@ def get_shift_to_align_b1_to_b2(b1, loc1, b2, loc2=None, pad_xy=(0, 0)):
     return anchor2 - anchor1 + np.array(pad_xy).flatten()
 
 
-def get_name_from_sys_argv(sys_argv=None):
+def get_name_from_sys_argv(sys_argv=None, stem=None):
     if sys_argv is None:
         sys_argv = sys.argv
 
+    if stem is None:
+        stem = path.stem
+
     path = pathlib.Path(sys_argv[0])
 
-    return str(path.parent) + pathlib.os.sep + path.stem
+    return str(path.parent) + pathlib.os.sep + stem
 
 
-def save_figure(name=None, fig=None):
+def save_figure(name=None, fig=None, stem=None):
     if name is None:
-        name = get_name_from_sys_argv()
+        name = get_name_from_sys_argv(stem=stem)
 
     if "." not in name:
         name = name + ".pdf"
@@ -247,6 +264,10 @@ class PatchGroup:
         bbox = self.get_geo_extents()
 
         return get_anchor(bbox, loc)
+
+    def set_visible(self, b):
+        for patch in self.get_patches():
+            patch.set_visible(b)
 
 
 class RectangleBlock(PatchGroup):
@@ -430,6 +451,3 @@ class CompoundPatch(PatchGroup):
 
 
 allowed_patches = (Patch, PatchGroup)
-
-if __name__ == "__main__":
-    pass

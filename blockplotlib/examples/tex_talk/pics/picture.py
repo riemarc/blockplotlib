@@ -51,10 +51,13 @@ a4 = Arrow(dcl, lcl, "s").place_text(r"approximation", "e", pad_xy=(pad, 0))
 
 ed_bpl_params = bpl_params.copy()
 ed_bpl_params["mpl_tpath_kws"].update(size=1.2)
-llta = Node(grid["llta"],
-            r"\begin{flushright}\underline{direct} late lumping\end{flushright",
-            "w",
-            params=ed_bpl_params)
+llta = Node(grid["llta"])
+llta.place_text(
+    r"\begin{flushright}late lumping\end{flushright", "w",
+    params=ed_bpl_params)
+llta.place_text(
+    r"\begin{flushright}\underline{direct} late lumping\end{flushright", "w",
+    params=ed_bpl_params)
 elta = Node(grid["elta"], r"\begin{flushleft}early lumping\end{flushleft", "e")
 
 ed_bpl_params = bpl_params.copy()
@@ -71,13 +74,23 @@ tria1 = Polygon(
 tria2 = Polygon(
     [(dx - wh, -dy + hh), (dx + wh, -dy - hh), (dx - wh, -dy - hh)], lw=0)
 
-set_color([a1, a4, a5, llta, hwc, tria1], "tab:green")
-set_color([a2, a3, elta, tria2], "tab:blue")
+set_color([a1, a4, a5, llta, hwc, tria1], xcolors["Pine green"])
+set_color([a2, a3, elta, tria2], xcolors["Blue-violet"])
 set_alpha([tria1, tria2], 0.5)
 tria1.set_zorder(0)
 tria2.set_zorder(0)
 
 place_patches(workspace=locals())
-plt.axis("off")
-plt.axis("equal")
-plt.show()
+
+hide_patches([llta.txt_patches[-2]])
+save_figure(stem="picture1")
+
+hide_patches([llta.txt_patches[-2]], False)
+hide_patches([a4.txt_patches[-1], a5, llta.txt_patches[-1], hwc])
+save_figure(stem="picture2")
+
+hide_patches(get_patches(locals()))
+hide_patches([dps, lcl], False)
+save_figure(stem="picture")
+
+show()
