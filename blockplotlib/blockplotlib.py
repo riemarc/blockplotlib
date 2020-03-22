@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import (
-    Wedge, Circle, PathPatch, Patch, Polygon as PolygonPatch)
+    Wedge, Circle, PathPatch, Patch, Polygon as PolygonPatch, Rectangle)
 from matplotlib.text import TextPath
 from matplotlib.transforms import Affine2D
 from matplotlib.path import Path
@@ -68,6 +68,9 @@ def cp(**kwargs):
 
 def show(*args, **kwargs):
     if "latexmk" not in sys.argv:
+        ax = plt.gca()
+        ax.set_aspect("equal")
+        ax.margins(0)
         plt.show(*args, **kwargs)
 
 
@@ -162,10 +165,10 @@ def get_name_from_sys_argv(sys_argv=None, stem=None):
     if sys_argv is None:
         sys_argv = sys.argv
 
+    path = pathlib.Path(sys_argv[0])
+
     if stem is None:
         stem = path.stem
-
-    path = pathlib.Path(sys_argv[0])
 
     return str(path.parent) + pathlib.os.sep + stem
 
@@ -213,57 +216,99 @@ def write_bpl_tex_file(name=None, pic_name=None, fig=None):
             pic_height / font_height, pic_name))
 
 
-class PatchGroup:
-    def __init__(self, geo_patches, text=None, loc="m"):
-        self.geo_patches = [p for p in geo_patches]
-        self.txt_patches = list()
+def get_extents(patches):
+    extents = [p.get_extents() for p in patches]
+    x0 = min([e.x0 for e in extents])
+    x1 = max([e.x1 for e in extents])
+    y0 = min([e.y0 for e in extents])
+    y1 = max([e.y1 for e in extents])
 
-        if text is not None:
-            self.place_text(text, loc)
+    return mpl.transforms.Bbox([[x0, y0], [x1, y1]])
+
+
+def translate_patch(patch, shift):
+    if isinstance(patch, (Circle, Wedge)):
+        patch.set_center(patch.center + shift)
+    elif isinstance(patch, Rectangle):
+        patch.set_xy(patch.get_xy() + shift)
+    elif isinstance(patch, PathPatch):
+        patch.set_path(patch.get_path().transformed(Affine2D().translate(
+            shift[0], shift[1])))
+    elif isinstance(patch, PolygonPatch):
+        patch.set_xy(patch.get_xy() + shift)
+
+
+class PatchGroup:
+    def __init__(self, geo_patches=None, txt_patches=None):
+        if geo_patches:
+            self.geo_patches = [p for p in geo_patches]
+        else:
+            self.geo_patches = list()
+
+        if txt_patches:
+            self.txt_patches = [p for p in txt_patches]
+        else:
+            self.txt_patches = list()
+
+    def __add__(self, other):
+        patch = PatchGroup(self.geo_patches + other.geo_patches)
+        patch.txt_patches = self.txt_patches + other.txt_patches
+
+        return patch
 
     def get_patches(self):
         return self.geo_patches + self.txt_patches
 
     def get_geo_extents(self):
-        return PatchGroup.get_extents(self.geo_patches)
+        return get_extents(self.geo_patches)
 
     def get_txt_extents(self):
-        return PatchGroup.get_extents(self.txt_patches)
+        return get_extents(self.txt_patches)
 
-    @staticmethod
-    def get_extents(patches):
-        extents = [p.get_extents() for p in patches]
-        x0 = min([e.x0 for e in extents])
-        x1 = max([e.x1 for e in extents])
-        y0 = min([e.y0 for e in extents])
-        y1 = max([e.y1 for e in extents])
-
-        return mpl.transforms.Bbox([[x0, y0], [x1, y1]])
+    def get_extents(self):
+        return get_extents(self.get_patches())
 
     def place_text(self, text, loc="m", pad_xy=(0, 0), params=None):
         if params is None:
             params = bpl_params
 
-        if len(self.geo_patches) == 0:
-            raise NotImplementedError
-
         text_path = TextPath((0, 0), text, **params["mpl_tpath_kws"])
-        shift = get_shift_to_align_b1_to_b2(
-            text_path.get_extents(),
-            opposite_loc[loc],
-            self.get_geo_extents(),
-            pad_xy=pad_xy)
-        text_path = text_path.transformed(Affine2D().translate(shift[0],
-                                                               shift[1]))
-        self.txt_patches.append(
-            PathPatch(text_path, **params["mpl_tpatch_kws"]))
+        text_patch = PathPatch(text_path, **params["mpl_tpatch_kws"])
+        patch_group = PatchGroup(txt_patches=[text_patch])
+        self.place_patch(patch_group, loc1=loc, kind2="txt", pad_xy=pad_xy)
 
         return self
 
-    def get_geo_anchor(self, loc="m"):
-        bbox = self.get_geo_extents()
+    def place_patch(self, patch, loc1, loc2=None, kind1="geo", kind2="geo",
+                    pad_xy=(0, 0)):
+        if loc2 is None:
+            loc2 = opposite_loc[loc1]
+
+        if not isinstance(patch, PatchGroup):
+            patch = PatchGroup([patch])
+
+        anchor1 = self.get_anchor(loc1, kind1)
+        anchor2 = patch.get_anchor(loc2, kind2)
+        shift = anchor1 - anchor2
+        patch.translate(shift + np.array(pad_xy))
+        self.geo_patches += patch.geo_patches
+        self.txt_patches += patch.txt_patches
+
+    def get_anchor(self, loc="m", kind="geo"):
+        if kind == "geo":
+            bbox = self.get_geo_extents()
+        elif kind == "txt":
+            bbox = self.get_txt_extents()
+        elif kind == "all":
+            bbox = self.get_extents()
+        else:
+            raise ValueError
 
         return get_anchor(bbox, loc)
+
+    def translate(self, shift):
+        for patch in self.get_patches():
+            translate_patch(patch, shift)
 
     def set_visible(self, b):
         for patch in self.get_patches():
@@ -293,7 +338,8 @@ class RectangleBlock(PatchGroup):
         else:
             verts = [
                 pos - dx - dy, pos - dx + dy, pos + dx + dy, pos + dx - dy,
-                pos - dx - dy, pos - dxi - dyi, pos + dxi - dyi, pos + dxi + dyi,
+                pos - dx - dy, pos - dxi - dyi, pos + dxi - dyi,
+                pos + dxi + dyi,
                 pos - dxi + dyi, pos - dxi - dyi, pos - dx - dy, pos - dx - dy]
             codes = ([Path.MOVETO] + [Path.LINETO] * 4 + [Path.MOVETO] +
                      [Path.LINETO] * 4 + [Path.MOVETO] + [Path.CLOSEPOLY])
@@ -301,7 +347,10 @@ class RectangleBlock(PatchGroup):
         rect_path = Path(verts, codes, **params["mpl_rpath_kws"])
         self.rect_patch = PathPatch(rect_path, **params["mpl_rpatch_kws"])
 
-        super().__init__((self.rect_patch,), text, loc)
+        super().__init__((self.rect_patch,))
+
+        if text:
+            self.place_text(text, loc)
 
 
 class CircleBlock(PatchGroup):
@@ -317,7 +366,10 @@ class CircleBlock(PatchGroup):
             self.circle_patch = Wedge(
                 pos, radius, 0, 360, width, **params["mpl_cpatch_kws"])
 
-        super().__init__((self.circle_patch,), text, loc)
+        super().__init__((self.circle_patch,))
+
+        if text:
+            self.place_text(text, loc)
 
 
 class RoundCorner(CircleBlock):
@@ -332,7 +384,7 @@ class RoundCorner(CircleBlock):
 
 
 class Corner(RectangleBlock):
-    def __init__(self, pos, text=None, loc="m", alpha=0, params=None):
+    def __init__(self, pos, text=None, loc="m", alpha=1, params=None):
         if params is None:
             params = bpl_params
 
@@ -372,6 +424,12 @@ class Node(CircleBlock):
 
 class Line(PatchGroup):
     def __init__(self, it1, it2, loc1, loc2=None, type="-", params=None):
+        if not isinstance(it1, PatchGroup):
+            it1 = Node(it1)
+
+        if not isinstance(it2, PatchGroup):
+            it2 = Node(it2)
+
         if params is None:
             params = bpl_params
 
@@ -382,8 +440,8 @@ class Line(PatchGroup):
         t_length = params["ap_block_tip_length"]
         arrow_lw = params["ap_block_line_width"]
 
-        a1 = it1.get_geo_anchor(loc1)
-        a2 = it2.get_geo_anchor(loc2)
+        a1 = it1.get_anchor(loc1)
+        a2 = it2.get_anchor(loc2)
 
         vect = a1 - a2
         angle = np.arctan2(vect[1], vect[0])
@@ -392,7 +450,7 @@ class Line(PatchGroup):
 
         if type == "->":
             arrow_p1 = a2 + np.array([np.cos(angle + t_angle),
-                                           np.sin(angle + t_angle)]) * t_length
+                                      np.sin(angle + t_angle)]) * t_length
             arrow_p2 = a2 + np.array([np.cos(angle - t_angle),
                                            np.sin(angle - t_angle)]) * t_length
             arrow_edge = normal * (2 * t_length * np.sin(t_angle) - arrow_lw) / 2
