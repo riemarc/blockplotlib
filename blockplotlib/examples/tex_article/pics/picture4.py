@@ -29,7 +29,9 @@ xk_corner = Corner(grid["xk_corner"])
 ks_corner = Corner(grid["ks_corner"])
 
 a1 = Arrow(setpoint, sum, "e")
-a2 = Arrow(sum, system, "e")
+a2 = CompoundPatch([
+    Arrow(sum, system, "e"),
+    Corner(sum.get_anchor("e"))])
 l1 = Line(system, so_cross, "e", "m")
 a3 = Arrow(so_cross, output, "m")
 a4 = CompoundPatch([
@@ -37,19 +39,18 @@ a4 = CompoundPatch([
     xk_corner,
     Arrow(xk_corner, gain, "m", "e")])
 a5 = Arrow(ks_corner, sum, "m", "s")
-a5.place_text(r"$-$", "e", pad_xy=(-0.3, a5.get_geo_extents().height / 2 - 0.2))
+a5.place_text(r"$-$", "w", pad_xy=(-0.3, a5.get_geo_extents().height / 2 - 0.2))
 a55 = CompoundPatch([
     Line(gain, ks_corner, "w", "m"),
     ks_corner,
     a5])
 
-a1.place_text(r"$w$", "s", pad_xy=(0, .2))
-a2.place_text(r"$u$", "s", pad_xy=(0, .2))
-a3.place_text(r"$x$", "s", pad_xy=(0, .2))
+a1.place_text(r"$w$", "n", pad_xy=(0, .2))
+a2.place_text(r"$u$", "n", pad_xy=(0, .2))
+a3.place_text(r"$x$", "n", pad_xy=(0, .2))
 
 place_patches(workspace=locals())
 
 save_figure()
 write_bpl_tex_file()
 show()
-

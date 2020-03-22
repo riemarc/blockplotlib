@@ -32,7 +32,9 @@ ks_corner = Corner(grid["ks_corner"])
 
 a0 = Arrow(setpoint, filter, "e")
 a1 = Arrow(filter, sum, "e")
-a2 = Arrow(sum, system, "e")
+a2 = CompoundPatch([
+    Arrow(sum, system, "e"),
+    Corner(sum.get_anchor("e"))])
 l1 = Line(system, so_cross, "e", "m")
 a3 = Arrow(so_cross, output, "m")
 a4 = CompoundPatch([
