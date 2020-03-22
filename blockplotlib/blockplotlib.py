@@ -37,9 +37,12 @@ bpl_params = dict(
     ap_block_tip_angle=0.4,
     ap_block_tip_length=0.45,
     ap_block_line_width=0.08,
+    ap_block_seg_len=0.3,
+    ap_block_seg_num=3,
     mpl_rpath_kws=dict(),
     mpl_rpatch_kws=patch_kws.copy(),
     mpl_cpatch_kws=patch_kws.copy(),
+    mpl_apatch_kws=patch_kws.copy(),
     mpl_tpatch_kws=patch_kws.copy(),
     mpl_tpath_kws=text_path_kws.copy(),
 )
@@ -350,7 +353,7 @@ class RectangleBlock(PatchGroup):
         super().__init__((self.rect_patch,))
 
         if text:
-            self.place_text(text, loc)
+            self.place_text(text, loc, params=params)
 
 
 class CircleBlock(PatchGroup):
@@ -369,7 +372,7 @@ class CircleBlock(PatchGroup):
         super().__init__((self.circle_patch,))
 
         if text:
-            self.place_text(text, loc)
+            self.place_text(text, loc, params=params)
 
 
 class RoundCorner(CircleBlock):
@@ -384,7 +387,7 @@ class RoundCorner(CircleBlock):
 
 
 class Corner(RectangleBlock):
-    def __init__(self, pos, text=None, loc="m", alpha=1, params=None):
+    def __init__(self, pos, text=None, loc="m", alpha=0, params=None):
         if params is None:
             params = bpl_params
 
@@ -447,6 +450,7 @@ class Line(PatchGroup):
         angle = np.arctan2(vect[1], vect[0])
         normal = np.array([-np.sin(angle), np.cos(angle)])
         tang = np.array([np.cos(angle), np.sin(angle)])
+        dist = np.linalg.norm(vect)
 
         if type == "->":
             arrow_p1 = a2 + np.array([np.cos(angle + t_angle),
@@ -463,7 +467,7 @@ class Line(PatchGroup):
             verts = [a2, arrow_p1, arrow_p11, arrow_p111, arrow_p222, arrow_p22,
                      arrow_p2]
 
-        elif type == "-":
+        elif type == "-" or type == "--" or "---":
             p1 = a1 + normal * arrow_lw / 2
             p2 = a2 + normal * arrow_lw / 2
             p3 = a2 - normal * arrow_lw / 2
@@ -473,7 +477,24 @@ class Line(PatchGroup):
         else:
             raise NotImplementedError()
 
-        arrow_patch = PolygonPatch(verts, **params["mpl_rpatch_kws"])
+        arrow_patch = PolygonPatch(verts, **params["mpl_apatch_kws"])
+
+        if type == "--" or type == "---":
+            seg_len = {"--": params["ap_block_seg_len"],
+                       "---": dist / (params["ap_block_seg_num"] * 2 + 1)}[type]
+            polys = list()
+            i = 0
+            while i * seg_len < dist * 2:
+                poly = [
+                    a1 + normal * arrow_lw / 2 - tang * seg_len * (2 * i + 1),
+                    a1 + normal * arrow_lw / 2 - tang * seg_len * (2 * i + 2),
+                    a1 - normal * arrow_lw / 2 - tang * seg_len * (2 * i + 2),
+                    a1 - normal * arrow_lw / 2 - tang * seg_len * (2 * i + 1)]
+                polys.append(PolygonPatch(poly).get_path())
+                i += 1
+            path = Path.make_compound_path(*polys)
+            path = path.clip_to_bbox(arrow_patch.get_extents())
+            arrow_patch = PathPatch(path, **params["mpl_apatch_kws"])
 
         super().__init__((arrow_patch,))
 
