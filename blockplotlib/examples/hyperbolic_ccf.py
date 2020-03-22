@@ -6,6 +6,7 @@ import numpy as np
 mpl.rcParams['text.usetex'] = True
 
 from blockplotlib import *
+from blockplotlib import Line as BplLine, Arrow as BplArrow
 
 update_bpl_params(rp_block_height=3.2)
 
@@ -44,10 +45,29 @@ class TransportSystemBlock(RectangleBlock):
         node2n = circ2.get_anchor("n") - offset
         node2s = circ2.get_anchor("s") + offset
         ed_params = cp(ap_block_line_width=bpl_params["cp_block_stroke_width"])
-        l1 = Line(node1n, node2n, "m", params=ed_params)
-        l2 = Line(node1s, node2s, "m", params=ed_params)
+        l1 = BplLine(node1n, node2n, "m", params=ed_params)
+        l2 = BplLine(node1s, node2s, "m", params=ed_params)
 
         return circ1 + circ2 + l1 + l2
+
+
+class Line(BplLine):
+    def __init__(self, it1, it2, loc1, loc2=None, type="-", params=None):
+        super().__init__(it1, it2, loc1, loc2=loc2, type=type, params=params)
+
+        if not (type == "--" or type == "---"):
+            if not isinstance(it1, PatchGroup):
+                it1 = Node(it1)
+
+            a1 = it1.get_anchor(loc1)
+            corner = Corner(a1)
+            new_patch = CompoundPatch([self, corner])
+            self.geo_patches[0].set_xy(new_patch.geo_patches[0].get_xy())
+
+
+class Arrow(Line):
+    def __init__(self, it1, it2, loc1, loc2=None, type="->", params=None):
+        super().__init__(it1, it2, loc1, loc2, type, params)
 
 
 sum_width = bpl_params["cp_block_radius"] * 2
@@ -56,7 +76,7 @@ int_height = bpl_params["rp_block_height"]
 int_width = 2
 g_width = 2.2
 g_height = 2.2
-dx = 3
+dx = 1.9
 dy = 3
 
 grid = dict(
@@ -147,7 +167,7 @@ a3 = Arrow(t_sys, int1, "e")
 a4 = Arrow(int1, int2, "e")
 l1 = Line(int2, lot1, "e")
 l2 = Line(lot1, lot2, "m", type="---")
-a5 = Arrow(lot2, int3, "e")
+a5 = BplArrow(lot2, int3, "e")
 a6 = CompoundPatch([
     Line(int3, otc, "e", "m"), otc,
     Arrow(otc, g4, "m", "n")
@@ -161,7 +181,7 @@ a8a = Arrow(co3, g3, "m", "n")
 a8 = Arrow(g3, s3, "s")
 l4 = Line(s3, lob2, "w")
 lob = Line(lob1, lob2, "m", type="---")
-a9 = Arrow(lob1, s2, "w")
+a9 = BplArrow(lob1, s2, "w")
 a10a = Arrow(co2, g2, "m", "n")
 a10 = Arrow(g2, s2, "s")
 a11 = Arrow(s2, s1, "w")
