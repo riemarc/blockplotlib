@@ -190,10 +190,13 @@ a12 = Arrow(g1, s1, "s")
 a13 = Arrow(s1, s0, "w")
 a14a = Arrow(t_sys, g0, "s")
 a14 = Arrow(g0, s0, "s")
+a15 = Arrow(sbc, sum, "m", "s")
+a15.place_text(r"$-$", "e",
+               pad_xy=(0.3, a15.get_geo_extents().height / 2 - 0.2))
 a15 = CompoundPatch([
     Line(s0, sbc, "w", "m"),
     sbc,
-    Arrow(sbc, sum, "m", "s")
+    a15
 ])
 
 place_patches(workspace=locals())

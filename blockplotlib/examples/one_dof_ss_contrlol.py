@@ -42,7 +42,7 @@ a4 = CompoundPatch([
     xk_corner,
     Arrow(xk_corner, gain, "m", "e")])
 a5 = Arrow(ks_corner, sum, "m", "s")
-a5.place_text(r"$-$", "w", pad_xy=(-0.3, a5.get_geo_extents().height / 2 - 0.2))
+a5.place_text(r"$-$", "e", pad_xy=(0.3, a5.get_geo_extents().height / 2 - 0.2))
 a55 = CompoundPatch([
     Line(gain, ks_corner, "w", "m"),
     ks_corner,
