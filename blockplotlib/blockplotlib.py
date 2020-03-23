@@ -28,22 +28,32 @@ patch_kws = dict(
     aa=True)
 text_path_kws = dict(usetex=mpl.rcParams['text.usetex'], size=1)
 bpl_params = dict(
+    # rp ~ rectangle patch
     rp_block_width=8,
     rp_block_height=2,
     rp_block_stroke_width=0.125,
+    # cp ~ circle patch
     cp_block_radius=0.5,
     cp_block_stroke_width=0.125,
+    # cop ~ cross over patch
     cop_block_radius=0.16,
+    # ap ~ arrow patch / line patch
     ap_block_tip_angle=0.4,
     ap_block_tip_length=0.45,
     ap_block_line_width=0.08,
     ap_block_seg_len=0.3,
     ap_block_seg_num=3,
+    # rpath_kws ~ rectangle path kwargs
     mpl_rpath_kws=dict(),
+    # rpatch_kws ~ rectangle patch kwargs
     mpl_rpatch_kws=patch_kws.copy(),
+    # cpatch_kws ~ circle patch kwargs
     mpl_cpatch_kws=patch_kws.copy(),
+    # apatch_kws ~ arrow patch kwargs
     mpl_apatch_kws=patch_kws.copy(),
+    # tpatch_kws ~ text patch kwargs
     mpl_tpatch_kws=patch_kws.copy(),
+    # tpath_kws ~ text path kwargs
     mpl_tpath_kws=text_path_kws.copy(),
 )
 _bpl_params = bpl_params.copy()
