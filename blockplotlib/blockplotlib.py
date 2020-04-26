@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import (
     Wedge, Circle, PathPatch, Patch, Polygon as PolygonPatch, Rectangle)
-from matplotlib.text import TextPath
+from matplotlib.text import TextPath, Text
 from matplotlib.transforms import Affine2D
 from matplotlib.path import Path
 from shapely.geometry import Polygon
@@ -13,7 +13,7 @@ from shapely.ops import cascaded_union
 
 
 __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
-           "RectangleBlock", "get_shift_to_align_b1_to_b2", "change_params",
+           "RectangleBlock", "change_params",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
            "Arrow", "Crossover", "CompoundPatch", "save_figure",
            "write_bpl_tex_file", "show", "update_bpl_params", "set_alpha",
@@ -80,11 +80,17 @@ def cp(**kwargs):
 
 
 def show(*args, **kwargs):
+    if "clipped" in kwargs:
+        clipped = kwargs.pop("clipped")
+    else:
+        clipped = True
     if "latexmk" not in sys.argv:
+        if not clipped:
+            return plt.show(*args, **kwargs)
         ax = plt.gca()
         ax.set_aspect("equal")
         ax.margins(0)
-        plt.show(*args, **kwargs)
+        return plt.show(*args, **kwargs)
 
 
 def get_patches(workspace):
@@ -164,16 +170,6 @@ def get_anchor(bbox, loc):
     return np.array(anchor)
 
 
-def get_shift_to_align_b1_to_b2(b1, loc1, b2, loc2=None, pad_xy=(0, 0)):
-    if loc2 is None:
-        loc2 = opposite_loc[loc1]
-
-    anchor1 = get_anchor(b1, loc1)
-    anchor2 = get_anchor(b2, loc2)
-
-    return anchor2 - anchor1 + np.array(pad_xy).flatten()
-
-
 def get_name_from_sys_argv(sys_argv=None, stem=None):
     if sys_argv is None:
         sys_argv = sys.argv
@@ -186,12 +182,15 @@ def get_name_from_sys_argv(sys_argv=None, stem=None):
     return str(path.parent) + pathlib.os.sep + stem
 
 
-def save_figure(name=None, fig=None, stem=None):
+def save_figure(name=None, fig=None, stem=None, clipped=True):
     if name is None:
         name = get_name_from_sys_argv(stem=stem)
 
     if "." not in name:
         name = name + ".pdf"
+
+    if not clipped:
+        return plt.savefig(name)
 
     if fig is None:
         fig = plt.gcf()
@@ -203,11 +202,12 @@ def save_figure(name=None, fig=None, stem=None):
     fig.canvas.draw()
     ax.axis("off")
 
-    plt.savefig(name, bbox_inches=ax.get_window_extent().transformed(
+    return plt.savefig(name, bbox_inches=ax.get_window_extent().transformed(
         fig.dpi_scale_trans.inverted()))
 
 
-def write_bpl_tex_file(name=None, pic_name=None, fig=None):
+def write_bpl_tex_file(name=None, pic_name=None, fig=None, clipped=True,
+                       fontsize=None):
     if name is None:
         name = get_name_from_sys_argv() + ".bpl_tex"
 
@@ -220,9 +220,23 @@ def write_bpl_tex_file(name=None, pic_name=None, fig=None):
     if fig is None:
         fig = plt.gcf()
 
-    ax = fig.axes[0]
-    font_height = TextPath((0, 0), "A", **text_path_kws).get_extents().height
-    pic_height = ax.viewLim.y1 - ax.viewLim.y0
+    # this string should be used in the latex document, too
+    meter = "fdjJklgq12h"
+    if clipped:
+        ax = fig.axes[0]
+        font_height = TextPath((0, 0), meter,
+                               **text_path_kws).get_extents().height
+        pic_height = ax.viewLim.y1 - ax.viewLim.y0
+    else:
+        if fontsize is None:
+            txt = plt.text(0, 0, meter)
+        else:
+            txt = plt.text(0, 0, meter, fontsize=fontsize)
+        renderer = fig.canvas.get_renderer()
+        bbox = txt.get_window_extent(renderer)
+        font_height = bbox.transformed(fig.dpi_scale_trans.inverted()).height
+        pic_height = fig.get_size_inches()[1]
+        txt.set_visible(False)
 
     with open(name, "w") as file:
         file.write("\includegraphics[height={}\BplLengthUnit]{{{}}}".format(
