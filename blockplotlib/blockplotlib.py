@@ -17,7 +17,8 @@ __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
            "Arrow", "Crossover", "CompoundPatch", "save_figure",
            "write_bpl_tex_file", "show", "update_bpl_params", "set_alpha",
-           "set_color", "get_patches", "get_mpl_patches", "hide_patches"]
+           "set_color", "get_patches", "get_mpl_patches", "hide_patches",
+           "get_name_from_sys_argv"]
 
 
 patch_kws = dict(
