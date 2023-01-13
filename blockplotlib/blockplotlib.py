@@ -9,7 +9,7 @@ from matplotlib.text import TextPath, Text
 from matplotlib.transforms import Affine2D
 from matplotlib.path import Path
 from shapely.geometry import Polygon
-from shapely.ops import cascaded_union
+from shapely.ops import unary_union
 
 
 __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
@@ -539,9 +539,9 @@ class CompoundPatch(PatchGroup):
             for gp in patch_group.geo_patches:
                 polygons.append(Polygon(gp.get_path().vertices))
 
-        polygon = cascaded_union(polygons)
+        polygon = unary_union(polygons)
         xy = [(x, y) for x, y in zip(polygon.exterior.coords.xy[0],
-                                        polygon.exterior.coords.xy[1])]
+                                     polygon.exterior.coords.xy[1])]
         compound_patch = PolygonPatch(xy, **params["mpl_rpatch_kws"])
 
         super().__init__([compound_patch])
