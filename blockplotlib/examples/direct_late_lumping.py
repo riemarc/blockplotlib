@@ -4,7 +4,6 @@ import matplotlib
 
 matplotlib.rcParams['text.usetex'] = True
 
-from blockplotlib.xcolor import xcolors
 from blockplotlib import *
 
 update_bpl_params(

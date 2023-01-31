@@ -4,7 +4,6 @@ import matplotlib
 
 matplotlib.rcParams['text.usetex'] = True
 
-from blockplotlib.xcolor import xcolors
 from blockplotlib import *
 
 update_bpl_params(
@@ -74,13 +73,14 @@ tria1 = Polygon(
 tria2 = Polygon(
     [(dx - wh, -dy + hh), (dx + wh, -dy - hh), (dx - wh, -dy - hh)], lw=0)
 
-set_color([a1, a4, a5, llta, hwc, tria1], xcolors["Pine green"])
-set_color([a2, a3, elta, tria2], xcolors["Blue-violet"])
+set_color([a1, a4, a5, llta, hwc, tria1], "tab:green")
+set_color([a2, a3, elta, tria2], "tab:blue")
 set_alpha([tria1, tria2], 0.5)
 tria1.set_zorder(0)
 tria2.set_zorder(0)
 
 place_patches(workspace=locals())
+# show()
 
 hide_patches([llta.txt_patches[-2]])
 save_figure(stem="picture1")
