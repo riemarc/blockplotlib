@@ -208,7 +208,7 @@ def save_figure(name=None, fig=None, stem=None, clipped=True):
 
 
 def write_bpl_tex_file(name=None, pic_name=None, fig=None, clipped=True,
-                       fontsize=None):
+                       fontsize=None, boxed=False, frickel_factor=1):
     if name is None:
         name = get_name_from_sys_argv() + ".bpl_tex"
 
@@ -240,8 +240,12 @@ def write_bpl_tex_file(name=None, pic_name=None, fig=None, clipped=True,
         txt.set_visible(False)
 
     with open(name, "w") as file:
-        file.write("\includegraphics[height={}\BplLengthUnit]{{{}}}".format(
-            pic_height / font_height, pic_name))
+        ratio = pic_height / font_height
+        line = "\includegraphics[height={}\BplLengthUnit]{{{}}}".format(
+            ratio * frickel_factor, pic_name)
+        if boxed:
+            line = r"{\setlength{\fboxsep}{0pt}\setlength{\fboxrule}{1pt}\fbox{" + line + r"}}"
+        file.write(line)
 
 
 def get_extents(patches):
