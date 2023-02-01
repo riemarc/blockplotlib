@@ -296,14 +296,21 @@ class PatchGroup:
     def get_extents(self):
         return get_extents(self.get_patches())
 
-    def place_text(self, text, loc="m", pad_xy=(0, 0), params=None):
+    def place_text(self, text, loc1="m", pad_xy=(0, 0), params=None, loc=None,
+                   loc2=None):
+        if loc is not None:
+            loc1 = loc
+            raise DeprecationWarning(
+                "loc kwarg of PatchGroup.place_text() is deprecated.")
+
         if params is None:
             params = bpl_params
 
         text_path = TextPath((0, 0), text, **params["mpl_tpath_kws"])
         text_patch = PathPatch(text_path, **params["mpl_tpatch_kws"])
         patch_group = PatchGroup(txt_patches=[text_patch])
-        self.place_patch(patch_group, loc1=loc, kind2="txt", pad_xy=pad_xy)
+        self.place_patch(patch_group, loc1=loc1, loc2=loc2, kind2="txt",
+                         pad_xy=pad_xy)
 
         return self
 
