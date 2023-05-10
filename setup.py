@@ -18,7 +18,7 @@ setuptools.setup(
     license="BSD 3-Clause License",
     description=description,
     long_description_content_type="text/markdown",
-    long_description=description,
+    long_description=long_description,
     packages=setuptools.find_packages(),
     install_requires=requirements,
     classifiers=(
