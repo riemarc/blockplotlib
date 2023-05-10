@@ -11,7 +11,7 @@ inside figures/block diagrams, blockplotlib (as matplotlib)
 depends not on latex.
 
 The functionality of the library is limited to the features
-demonstrated in the examples, but can be extended quite easily.
+demonstrated in the examples but can be extended quite easily.
 
 ## Examples
 
