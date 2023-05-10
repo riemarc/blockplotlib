@@ -1,2 +1,2 @@
-matplotlib>=3.2.0
-Shapely>=1.7.0
+matplotlib
+Shapely

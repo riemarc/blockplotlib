@@ -1,3 +1,7 @@
+"""
+see readme file at https://github.com/riemarc/blockplotlib
+"""
+
 import sys
 import pathlib
 import numpy as np

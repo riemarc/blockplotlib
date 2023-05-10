@@ -53,6 +53,5 @@ a2.place_text(r"$u$", "n", pad_xy=(0, .2))
 a3.place_text(r"$x$", "n", pad_xy=(0, .2))
 
 place_patches(workspace=locals())
-plt.axis("off")
-plt.axis("equal")
-plt.show()
+save_figure()
+show()

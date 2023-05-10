@@ -6,7 +6,7 @@ import numpy as np
 mpl.rcParams['text.usetex'] = True
 
 from blockplotlib import *
-from blockplotlib import Line as BplLine, Arrow as BplArrow
+from blockplotlib import Line as BplLine
 
 update_bpl_params(rp_block_height=3.2)
 
@@ -34,7 +34,8 @@ class TransportSystemBlock(RectangleBlock):
             [6., 0.]])
         path_codes = [1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 
-        return PathPatch(Path(path_data, path_codes), facecolor="gray")
+        return PathPatch(Path(path_data, path_codes), facecolor="gray",
+                         capstyle='round')
 
     def get_mechanics(self):
         circ1 = CircleBlock((0, 0), params=cp(cp_block_radius=0.5))
@@ -74,26 +75,23 @@ sum_width = bpl_params["cp_block_radius"] * 2
 t_sys_width = bpl_params["rp_block_width"]
 int_height = bpl_params["rp_block_height"]
 int_width = 2
-g_width = 2.2
+g_width = 2.3
 g_height = 2.2
 dx = 1.9
-ddx = dx / 2
+ddx = 1.6 * dx / 2
 dy = 8
 ddy = (dy - sum_width / 2 - g_width) / 2
 
 grid = dict(
     t_sys=(0, 0),
     output=(+(t_sys_width / 2 + 1.5 * dx), 0),
-    # output bottom corner
-    obc=(+(t_sys_width / 2 + 2 * dx + sum_width),
-         -dy),
     # system bottom node
     sbn=(0, -dy),
     # ints
-    int3=(-(t_sys_width + int_width) / 2 - dx, 0),
+    int3=(-(t_sys_width + int_width) / 2 - 1.5 * dx, 0),
 )
 grid.update(dict(
-    int2=(grid["int3"][0] - dx - int_width - sum_width, 0)
+    int2=(grid["int3"][0] - 2 * ddx - int_width - sum_width, 0)
 ))
 grid.update(dict(
     int1=(grid["int2"][0] - 2 * dx - 2 * ddx - int_width - 2 * sum_width, 0)
@@ -149,7 +147,7 @@ grid.update(dict(
 
 t_sys_path_kws = dict(usetex=mpl.rcParams['text.usetex'], size=0.8)
 t_sys_params = cp(mpl_tpath_kws=t_sys_path_kws)
-t_sys = TransportSystemBlock(grid["t_sys"], r"$\bar x_{n+1}(\theta, t)$",
+t_sys = TransportSystemBlock(grid["t_sys"], r"$\xi_{N+1}(\theta, t)$",
                              params=t_sys_params)
 int_path_kws = dict(usetex=mpl.rcParams['text.usetex'], size=1.5)
 int_params = cp(rp_block_width=int_width, mpl_tpath_kws=int_path_kws)
@@ -172,27 +170,32 @@ dhb1 = Node(grid["dhb1"])
 dhb2 = Node(grid["dhb2"])
 
 g0_params = t_sys_params.copy()
-g0_params.update(rp_block_width=11, rp_block_height=g_height,
+g0_params.update(rp_block_width=12, rp_block_height=g_height,
                  mpl_tpath_kws=bpl_params["mpl_tpath_kws"])
-g0 = RectangleBlock(grid["g0"], r"$a^*_{n+1} = \gamma(\theta) + "
-                                r"\sum_{i=1}^m\gamma_i\delta_{\theta_i}$",
+g0 = RectangleBlock(grid["g0"], r"$a_{N+1} = \tilde{a}_{N+1}(\theta) + "
+                                r"\sum_{i=1}^m\mathring{a}_i\delta_{\theta_i}$",
                     params=g0_params)
 g_params = cp(rp_block_width=g_width, rp_block_height=g_height)
-g1 = RectangleBlock(grid["g1"], r"$a_1$", params=g_params)
-g2 = RectangleBlock(grid["g2"], r"$a_2$", params=g_params)
-g3 = RectangleBlock(grid["g3"], r"$a_{n-1}$", params=g_params)
-g4 = RectangleBlock(grid["g4"], r"$a_n$", params=g_params)
+g1 = RectangleBlock(grid["g1"], r"$\tilde{a}_1$", params=g_params)
+g2 = RectangleBlock(grid["g2"], r"$\tilde{a}_2$", params=g_params)
+g3 = RectangleBlock(grid["g3"], r"$\tilde{a}_{N-1}$", params=g_params)
+g4 = RectangleBlock(grid["g4"], r"$\tilde{a}_N$", params=g_params)
 s1 = CircleBlock(grid["s1"])
 s2 = CircleBlock(grid["s2"])
 s3 = CircleBlock(grid["s3"])
 
 a1 = Arrow(co_tl, int1, "e")
+a1.place_text(r"$-$", "s", pad_xy=(0.2, -0.3))
 a2 = Arrow(int1, s1, "e")
+a2.place_text(r"$\xi_1(t)$", loc1="w", loc2="w", pad_xy=(0.5, 1.2))
 a3 = Arrow(s2, int2, "e")
 a4 = Arrow(int2, s3, "e")
+a4.place_text(r"$\xi_{N-1}(t)$", loc1="w", loc2="w", pad_xy=(0.5, 1.2))
 a5 = Arrow(s3, int3, "e")
 a6 = Arrow(int3, t_sys, "e")
+a6.place_text(r"$\xi_{N}(t)$", loc1="w", loc2="w", pad_xy=(0.5, 1.2))
 a7 = Arrow(t_sys, co_tr, "e")
+a7.place_text(r"$y(t)$", loc1="m", loc2="m", pad_xy=(0, 1.2))
 ldt1 = Line(s1, dht1, "e")
 ldt2 = Line(dht1, dht2, "m", type="---")
 ldt3 = Arrow(dht2, s2, "e")
