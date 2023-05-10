@@ -1,4 +1,5 @@
 import setuptools
+import os
 
 description = "Matplotlib-based library for the creation of block diagrams"
 
