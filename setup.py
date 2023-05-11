@@ -12,7 +12,7 @@ requirements = read_file("requirements.txt").splitlines()
 
 setuptools.setup(
     name="blockplotlib",
-    version="2023.1.3",
+    version="2023.1.4",
     url="https://github.com/riemarc/blockplotlib",
     author="Marcus Riesmeier",
     author_email="gluehen-sierren-0c@icloud.com",
