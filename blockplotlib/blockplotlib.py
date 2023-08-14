@@ -189,7 +189,8 @@ def get_name_from_sys_argv(sys_argv=None, stem=None):
     return str(path.parent) + pathlib.os.sep + stem
 
 
-def save_figure(name=None, fig=None, stem=None, clipped=True):
+def save_figure(name=None, fig=None, stem=None, clipped=True,
+                transparent=False):
     if name is None:
         name = get_name_from_sys_argv(stem=stem)
 
@@ -197,7 +198,7 @@ def save_figure(name=None, fig=None, stem=None, clipped=True):
         name = name + ".pdf"
 
     if not clipped:
-        return plt.savefig(name)
+        return plt.savefig(name, transparent=transparent)
 
     if fig is None:
         fig = plt.gcf()
@@ -210,7 +211,7 @@ def save_figure(name=None, fig=None, stem=None, clipped=True):
     ax.axis("off")
 
     return plt.savefig(name, bbox_inches=ax.get_window_extent().transformed(
-        fig.dpi_scale_trans.inverted()))
+        fig.dpi_scale_trans.inverted()), transparent=transparent)
 
 
 def write_bpl_tex_file(name=None, pic_name=None, fig=None, clipped=True,
