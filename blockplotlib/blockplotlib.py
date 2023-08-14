@@ -17,7 +17,7 @@ from shapely.ops import unary_union
 
 
 __all__ = ["bpl_params", "opposite_loc", "get_anchor", "PatchGroup",
-           "RectangleBlock", "change_params",
+           "RectangleBlock", "change_params", "remove_patches",
            "place_patches", "CircleBlock", "cp", "Corner", "Node", "Line",
            "Arrow", "Crossover", "CompoundPatch", "save_figure",
            "write_bpl_tex_file", "show", "update_bpl_params", "set_alpha",
@@ -153,9 +153,11 @@ def remove_patches(patches, axis=None):
     if axis is None:
         axis = plt.gca()
 
-    for patch in patches:
-        if patch in axis.patches:
-            axis.add
+    for patch in get_mpl_patches(patches=patches):
+        for i, ax_patch in enumerate(axis.patches):
+            if patch == ax_patch:
+                # TODO: this one is unformed!
+                ax_patch.remove()
 
 
 def get_anchor(bbox, loc):
